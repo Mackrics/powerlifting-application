@@ -1,8 +1,6 @@
 source("packages.R")
 source("helpers.R")
 
-raw_data_path <- "./data-raw/"
-
 # Define UI for miles per gallon app ----
 ui <- fluidPage(
 
@@ -22,7 +20,6 @@ ui <- fluidPage(
   titlePanel("Powerlifting application"),
   sidebarLayout(
     sidebarPanel(
-      textInput("rawData", "Enter the path to the raw data:"),
       dateRangeInput("dates", 
                      "Date range",
 		     min   = "2000-01-01",
@@ -59,7 +56,7 @@ server <- function(input, output, session) {
   old_data <- read_feather("./data/lifting-data.arrow")
 
   data <- eventReactive(input$refresh, {
-    refresh_data(input$rawData)
+    refresh_data()
   }, ignoreNULL = FALSE)
 
   observeEvent(input$save, {

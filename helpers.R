@@ -1,6 +1,6 @@
 # Get new data ----------------------------------------------------------------
-refresh_data <- function(data_path) {
-  dir_ls(data_path, recurse = TRUE) |>
+refresh_data <- function() {
+  dir_ls("./data-raw", recurse = TRUE) |>
   (\(x) x[str_detect(x, "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]")]) () |>
   map(\(x) read_delim(x, delim = " ", show_col_types = FALSE)) |>
   enframe(name = "path") |>
