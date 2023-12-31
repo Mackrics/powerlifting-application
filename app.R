@@ -34,7 +34,7 @@ ui <- fluidPage(
 		   selected = c("squat", "bench press", "deadlift")),
     selectizeInput("cycles", "Select cycles", multiple = TRUE, 
 		   choices = get_cycles(),
-		   selected = c(1,2,3))
+		   selected = c(1,2,3,4))
 
   ),
   mainPanel(
