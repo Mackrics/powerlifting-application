@@ -16,6 +16,8 @@ refresh_data <- function() {
     exercise = exercise |>
     str_replace_all("seal", "seal row") |>
     str_replace_all("^bench$", "bench press") |>
+    str_replace_all("^cg-bench$", "close grip bench press") |>
+    str_replace_all("^lb-squat$", "lowbar squat") |>
     str_replace_all("^tricep$", "tricep pushdown") |>
     str_replace_all("slr", "side lateral raise")
   ) |>
