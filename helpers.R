@@ -1,3 +1,17 @@
+# Group exercises by muscle group ----------------------------------------------
+group_exercises <- function(data) {
+  data |>
+    mutate(
+      group = case_match(exercise,
+        c("squat", "lowbar squat", "slsquat") ~ "Legs",
+        c("close grip bench press", "bench press", "db-bench", "flies") ~ "Chest",
+        c("deadlift") ~ "Hamstrings",
+        c("bbrow", "seal row") ~ "Back",
+        c("db-side lateral raise", "side lateral raise", "bb-curl", "french-press", "tricep pushdown") ~ "Arms"
+      )
+    )
+}
+
 # Get new data ----------------------------------------------------------------
 refresh_data <- function() {
   dir_ls("./data-raw", recurse = TRUE) |>
@@ -18,18 +32,20 @@ refresh_data <- function() {
     str_replace_all("^bench$", "bench press") |>
     str_replace_all("^cg-bench$", "close grip bench press") |>
     str_replace_all("^lb-squat$", "lowbar squat") |>
+    str_replace_all("^french press$", "french press") |>
     str_replace_all("^tricep$", "tricep pushdown") |>
     str_replace_all("slr", "side lateral raise")
   ) |>
-  select(cycle, date, exercise, weight, reps, rpe)
+  select(cycle, date, exercise, weight, reps, rpe) |>
+  group_exercises()
 }
 
 # Summarize data per workout ---------------------------------------------------
-get_overview <- function(data) { 
+get_overview <- function(data, by = c(date, exercise)) { 
   data |>
   mutate(e1rm = weight * (1 + (0.033 * reps))) |>
   summarize(
-    .by = c(date, exercise),
+    .by = {{ by }},
     sets = n(),
     volume = sum(weight * reps)/1000,
     reps = sum(reps),
@@ -37,35 +53,35 @@ get_overview <- function(data) {
     e1rm = max(e1rm),
     cycle = unique(cycle)
   ) |>
-  select(cycle, date, exercise, sets, reps, volume, everything())
+  select({{ by }}, cycle, sets, reps, volume, everything())
 }
 
 # Evolution of volume ----
 plot_volume <- function(
     data,
+    groups,
     start_date = Sys.Date() - 90,
     end_date = Sys.Date(),
-    exercises = c("bench press", "squat"),
     cycles = get_cycles()
   ) {
   data |>
-  get_overview() |>
-  fill_dates() |>
+  filter(group %in% groups) |>
+  get_overview(by = c(date, group)) |>
+  fill_dates(group = "group") |>
   summarize(
-    .by = c(date, exercise),
+    .by = c(date, group),
     volume = sum(replace_na(volume, 0)),
     cycle = unique(cycle)
   ) |>
   mutate(
-    .by = exercise,
+    .by = group,
     volume  = rollsum(replace_na(volume, 0), k = 7, na.pad = TRUE, align = "right")
   ) |>
   filter(date >= start_date & date <= end_date) |>
   filter(cycle %in% cycles) |>
-  filter(exercise %in% exercises) |>
   filter(cycle %in% cycles) |>
   ggplot() +
-  aes(date, volume, color = exercise) +
+  aes(date, volume, color = group) +
   geom_line() +
   theme_ctp_grid(ctp_mocha) +
   scale_color_ctp(ctp_mocha) +
@@ -83,7 +99,7 @@ plot_e1rm <- function(
   ) {
   data |>
   filter(date >= start_date & date <= end_date) |>
-  filter(exercise %in% exercises) |>
+  filter(exercise %in% {{ exercises }}) |>
   filter(cycle %in% cycles) |>
   get_overview() |>
   ggplot() +
@@ -134,9 +150,11 @@ max_table <- function(
   gt_theme_ctp(ctp_mocha) |>
   tab_options(
     table.font.name = "IBM Plex Mono"
-  ) |>
-  tab_header("Meso details")
+  )
 }
+
+
+# Evolution of total volume ----
 
 plot_total_volume <- function(
     data,
@@ -167,7 +185,7 @@ plot_total_volume <- function(
   scale_color_ctp(ctp_mocha) +
   labs(x = "", y = "", title = "Evolution of total volume (rolling sum)") +
   theme(text = element_text(size = 18)) +
-  scale_color_ctp(ctp_mocha)
+  scale_color_ctp(ctp_mocha) 
 }
 
 show_meso <- function(
@@ -202,19 +220,25 @@ get_exercises <- function() {
     pull()
 }
 
+get_groups <- function() {
+  read_feather("./data/lifting-data.arrow") |>
+    distinct(group) |>
+    pull()
+}
+
 get_cycles <- function() {
   read_feather("./data/lifting-data.arrow") |>
     distinct(cycle) |>
     pull()
 }
 
-fill_dates <- function(data) {
+fill_dates <- function(data, group = "exercise") {
   min_date = min(data$date)
   tibble(
     date         = seq.Date(from = min_date, to = Sys.Date(), by = "1 day"),
-    exercise     = list(unique(data$exercise))
+    !!group     := list(unique(data[[ group ]]))
   ) |>
-  unnest(exercise) |>
-  left_join(data, join_by(date, exercise)) |>
+  unnest(!!group) |>
+  left_join(data, join_by(date, !!group)) |>
   fill(cycle)
 }

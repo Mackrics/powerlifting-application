@@ -1,7 +1,6 @@
 source("packages.R")
 source("helpers.R")
 
-# Define UI for miles per gallon app ----
 ui <- fluidPage(
 
   theme = bslib::bs_theme(
@@ -32,6 +31,9 @@ ui <- fluidPage(
     selectizeInput("exercise", "Select exercises", multiple = TRUE, 
 		   choices = get_exercises(),
 		   selected = c("squat", "bench press", "deadlift")),
+    selectizeInput("group", "Select muscle group", multiple = TRUE, 
+		   choices = get_groups(),
+		   selected = get_groups()),
     selectizeInput("cycles", "Select cycles", multiple = TRUE, 
 		   choices = get_cycles(),
 		   selected = c(1, 2, 3, 4, 5))
@@ -50,7 +52,6 @@ ui <- fluidPage(
 )
 )
 
-# Define server logic to plot various variables against mpg ----
 server <- function(input, output, session) {
 
   old_data <- read_feather("./data/lifting-data.arrow")
@@ -90,7 +91,7 @@ server <- function(input, output, session) {
 	  old_data,
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
+	  groups     = input$group,
 	  cycles     = input$cycles
 	)
       } else {
@@ -98,7 +99,7 @@ server <- function(input, output, session) {
 	  data(),
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
+	  groups     = input$group,
 	  cycles     = input$cycles
 	)
       }
