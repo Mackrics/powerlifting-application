@@ -53,26 +53,26 @@ refresh_data <- function() {
       str_replace_all("db-curl", "dumbbell curl") |>
       str_replace_all("back-raise", "back raise") |>
       str_replace_all("31x-squat", "31x squat") |>
-      str_replace_all("bb-row", "barbell row")
+      str_replace_all("bb-row", "barbell row"),
+     e1rm = weight * (1 + (0.033 * reps))
   )] |>
   group_exercises()
 }
 
 # Summarize data per workout ---------------------------------------------------
-get_overview <- function(data, by = c(date, exercise)) { 
-  data |>
-  mutate(e1rm = weight * (1 + (0.033 * reps))) |>
-  summarize(
-    .by = {{ by }},
-    sets = n(),
+get_overview <- function(data, by = c("date", "exercise")) { 
+  data[, .(
+    sets   = .N,
     volume = sum(weight * reps)/1000,
-    reps = sum(reps),
-    max = max(weight),
-    e1rm = max(e1rm),
-    cycle = unique(cycle)
-  ) |>
-  select({{ by }}, cycle, sets, reps, volume, everything())
+    reps   = sum(reps),
+    max    = max(weight),
+    e1rm   = max(e1rm),
+    cycle  = unique(cycle)
+    ),
+    by = by
+  ][]
 }
+
 
 # Evolution of volume ----
 plot_volume <- function(
@@ -84,7 +84,7 @@ plot_volume <- function(
   ) {
   data |>
   filter(group %in% groups) |>
-  get_overview(by = c(date, group)) |>
+  get_overview(by = c("date", "group")) |>
   fill_dates(group = "group") |>
   summarize(
     .by = c(date, group),
