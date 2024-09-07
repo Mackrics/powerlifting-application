@@ -82,15 +82,15 @@ plot_volume <- function(
     end_date = Sys.Date(),
     cycles = get_cycles()
   ) {
-  data |>
-  filter(group %in% groups) |>
+  data[group %in% groups] |>
   get_overview(by = c("date", "group")) |>
   fill_dates(group = "group") |>
-  summarize(
-    .by = c(date, group),
+  _[, list(
     volume = sum(replace_na(volume, 0)),
     cycle = unique(cycle)
-  ) |>
+    ),
+    by = list(date, group)
+  ] |>
   mutate(
     .by = group,
     volume  = rollsum(replace_na(volume, 0), k = 10, na.pad = TRUE, align = "right")
@@ -251,12 +251,12 @@ get_cycles <- function() {
 }
 
 fill_dates <- function(data, group = "exercise") {
-  min_date = min(data$date)
-  tibble(
-    date         = seq.Date(from = min_date, to = Sys.Date(), by = "1 day"),
-    !!group     := list(unique(data[[ group ]]))
+  data.table(
+    date   = seq.Date(from = data[, min(date)], to = Sys.Date(), by = "1 day"),
+    group = list(data[,unique(.SD), .SDcols = group])
   ) |>
-  unnest(!!group) |>
-  left_join(data, join_by(date, !!group)) |>
+  _[, .(group = unlist(group)), by = date] |>
+  setnames(old = "group", new = group) |>
+  _[data, on = c("date", group)] |>
   fill(cycle)
 }
