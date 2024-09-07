@@ -1,42 +1,50 @@
 # Group exercises by muscle group ----------------------------------------------
 group_exercises <- function(data) {
-  data |>
-    mutate(
+  data[,let(
       group = case_match(exercise,
-        c("squat", "lowbar squat", "slsquat") ~ "Legs",
+        c("squat", "3xx-squat", "lowbar squat", "slsquat") ~ "Legs",
         c("close grip bench press", "bench press", "db-bench", "flies") ~ "Chest",
-        c("deadlift") ~ "Hamstrings",
+        c("deadlift", "pause-deadlift") ~ "Hamstrings",
         c("bbrow", "seal row") ~ "Back",
         c("db-side lateral raise", "side lateral raise", "bb-curl", "french-press", "tricep pushdown") ~ "Arms"
       )
     )
+  ][]
+}
+
+dt_enframe <- function(vec, name = "name", value = "value") {
+  framed <-
+    data.table(
+      name = names(vec),
+      value = vec
+    )
+  setnames(framed, old = c("name", "value"), new = c(name, value))
+  return(framed)
 }
 
 # Get new data ----------------------------------------------------------------
 refresh_data <- function() {
-  dir_ls("./data-raw", recurse = TRUE) |>
-  (\(x) x[str_detect(x, "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]")]) () |>
-  map(\(x) read_delim(x, delim = " ", show_col_types = FALSE)) |>
-  enframe(name = "path") |>
-  mutate(
-    date = str_extract(path, "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") |>
-      as.Date(),
-    cycle = str_extract(path, "[0-9][0-9][0-9]_cycle") |>
-	    str_extract("[0-9][0-9][0-9]") |>
-	    as.numeric()
-  ) |>
-  unnest(value) |>
-  mutate(
+dir_ls("./data-raw", recurse = TRUE, regexp = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") |>
+  map(fread) |>
+  dt_enframe(name = "path", value = "data") |>
+  _[, let(
+    date = as.Date(str_extract(path, "[0-9]{4}-[0-9]{2}-[0-9]{2}")),
+    cycle = str_extract(path, "[0-9]{3}_cycle") |>
+	    str_extract("[0-9]{3}") |>
+	    as.numeric(),
+    data = map(data, \(x) x[, let(weight = as.double(weight), rpe = as.double(rpe))])
+  )]  |>
+  _[, rbindlist(data), by = .(date, cycle)] |>
+  _[, let(
     exercise = exercise |>
-    str_replace_all("seal", "seal row") |>
-    str_replace_all("^bench$", "bench press") |>
-    str_replace_all("^cg-bench$", "close grip bench press") |>
-    str_replace_all("^lb-squat$", "lowbar squat") |>
-    str_replace_all("^french press$", "french press") |>
-    str_replace_all("^tricep$", "tricep pushdown") |>
-    str_replace_all("slr", "side lateral raise")
-  ) |>
-  select(cycle, date, exercise, weight, reps, rpe) |>
+      str_replace_all("seal", "seal row") |>
+      str_replace_all("^bench$", "bench press") |>
+      str_replace_all("^cg-bench$", "close grip bench press") |>
+      str_replace_all("^lb-squat$", "lowbar squat") |>
+      str_replace_all("^french press$", "french press") |>
+      str_replace_all("^tricep$", "tricep pushdown") |>
+      str_replace_all("slr", "side lateral raise")
+  )] |>
   group_exercises()
 }
 
@@ -75,17 +83,17 @@ plot_volume <- function(
   ) |>
   mutate(
     .by = group,
-    volume  = rollsum(replace_na(volume, 0), k = 7, na.pad = TRUE, align = "right")
+    volume  = rollsum(replace_na(volume, 0), k = 10, na.pad = TRUE, align = "right")
   ) |>
   filter(date >= start_date & date <= end_date) |>
   filter(cycle %in% cycles) |>
   filter(cycle %in% cycles) |>
   ggplot() +
   aes(date, volume, color = group) +
-  geom_line() +
+  geom_line(linewidth = 1) +
   theme_ctp_grid(ctp_mocha) +
   scale_color_ctp(ctp_mocha) +
-  labs(x = "", y = "", title = "Evolution of volume (7 day rolling sum)", color = "") +
+  labs(x = "", y = "", title = "Evolution of volume (10 day rolling sum)", color = "") +
   theme(text = element_text(size = 18))
 }
 
@@ -105,7 +113,7 @@ plot_e1rm <- function(
   ggplot() +
   aes(date, e1rm, color = exercise) +
   geom_point() +
-  geom_line() +
+  geom_line(linewidth = 1) +
   theme_ctp_grid(ctp_mocha) +
   scale_color_ctp(ctp_mocha) +
   labs(
@@ -180,7 +188,7 @@ plot_total_volume <- function(
   pivot_longer(-date, names_prefix = "cumvol", names_to = "days", values_to = "rollsum") |>
   ggplot() +
   aes(date, rollsum, color = days) +
-  geom_line() +
+  geom_line(linewidth = 1) +
   theme_ctp_grid(ctp_mocha) +
   scale_color_ctp(ctp_mocha) +
   labs(x = "", y = "", title = "Evolution of total volume (rolling sum)") +

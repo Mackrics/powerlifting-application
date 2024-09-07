@@ -36,7 +36,7 @@ ui <- fluidPage(
 		   selected = get_groups()),
     selectizeInput("cycles", "Select cycles", multiple = TRUE, 
 		   choices = get_cycles(),
-		   selected = c(1, 2, 3, 4, 5))
+		   selected = c(1, 2, 3, 4, 5, 6))
 
   ),
   mainPanel(
