@@ -261,5 +261,5 @@ fill_dates <- function(data, group = "exercise") {
   _[, .(group = unlist(group)), by = date] |>
   setnames(old = "group", new = group) |>
   _[data, on = c("date", group)] |>
-  fill(cycle)
+  setnafill("locf", cols = "cycle")
 }
