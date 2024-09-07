@@ -91,13 +91,12 @@ plot_volume <- function(
     ),
     by = list(date, group)
   ] |>
-  mutate(
-    .by = group,
-    volume  = rollsum(replace_na(volume, 0), k = 10, na.pad = TRUE, align = "right")
-  ) |>
-  filter(date >= start_date & date <= end_date) |>
-  filter(cycle %in% cycles) |>
-  filter(cycle %in% cycles) |>
+  _[, let(
+      volume  = rollsum(replace_na(volume, 0), k = 10, na.pad = TRUE, align = "right")
+    ),
+    by = group,
+  ] |>
+  _[(date >= start_date & date <= end_date) & (cycle %in% cycles)] |>
   ggplot() +
   aes(date, volume, color = group) +
   geom_line(linewidth = 1) +
