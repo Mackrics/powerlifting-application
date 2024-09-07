@@ -2,11 +2,11 @@
 group_exercises <- function(data) {
   data[,let(
       group = case_match(exercise,
-        c("squat", "3xx-squat", "lowbar squat", "slsquat") ~ "Legs",
-        c("close grip bench press", "bench press", "db-bench", "flies") ~ "Chest",
-        c("deadlift", "pause-deadlift") ~ "Hamstrings",
-        c("bbrow", "seal row") ~ "Back",
-        c("db-side lateral raise", "side lateral raise", "bb-curl", "french-press", "tricep pushdown") ~ "Arms"
+        c("squat", "3xx-squat", "31x squat", "lowbar squat", "slsquat", "belt squat") ~ "Legs",
+        c("close grip bench press", "bench press", "db-bench", "flies", "fu bench press") ~ "Chest",
+        c("deadlift", "pause-deadlift", "back raise") ~ "Hamstrings",
+        c("bbrow", "seal row", "barbell row") ~ "Back",
+        c("db-side lateral raise", "side lateral raise", "bb-curl", "french-press", "tricep pushdown", "dumbbell curl") ~ "Arms"
       )
     )
   ][]
@@ -24,7 +24,11 @@ dt_enframe <- function(vec, name = "name", value = "value") {
 
 # Get new data ----------------------------------------------------------------
 refresh_data <- function() {
-dir_ls("./data-raw", recurse = TRUE, regexp = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") |>
+  dir_ls(
+    "./data-raw",
+    recurse = TRUE,
+    regexp = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
+  ) |>
   map(fread) |>
   dt_enframe(name = "path", value = "data") |>
   _[, let(
@@ -43,7 +47,13 @@ dir_ls("./data-raw", recurse = TRUE, regexp = "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[
       str_replace_all("^lb-squat$", "lowbar squat") |>
       str_replace_all("^french press$", "french press") |>
       str_replace_all("^tricep$", "tricep pushdown") |>
-      str_replace_all("slr", "side lateral raise")
+      str_replace_all("slr", "side lateral raise") |>
+      str_replace_all("belt-squat", "belt squat") |>
+      str_replace_all("fu-bench", "fu bench press") |>
+      str_replace_all("db-curl", "dumbbell curl") |>
+      str_replace_all("back-raise", "back raise") |>
+      str_replace_all("31x-squat", "31x squat") |>
+      str_replace_all("bb-row", "barbell row")
   )] |>
   group_exercises()
 }
