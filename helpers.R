@@ -182,18 +182,22 @@ plot_total_volume <- function(
   data |>
   get_overview() |>
   fill_dates() |>
-  summarize(
-    .by = date,
-    volume = sum(volume, na.rm = TRUE),
-    cycle = unique(cycle)
-  ) |>
-  mutate(
-    cumvol7  = rollsum(replace_na(volume, 0), k = 7, na.pad = TRUE, align = "right"),
-    cumvol14 = rollsum(replace_na(volume, 0), k = 14, na.pad = TRUE, align = "right"),
-  ) |>
-  filter(date >= start_date & date <= end_date) |>
-  filter(cycle %in% cycles) |>
-  select(date, starts_with("cumvol")) |>
+  _[, .(
+      volume = sum(volume, na.rm = TRUE),
+      cycle = unique(cycle)
+    ),
+    by = date
+  ] |>
+  _[,
+    let(
+      cumvol7  = rollsum(replace_na(volume, 0), k = 7, na.pad = TRUE, align = "right"),
+      cumvol14 = rollsum(replace_na(volume, 0), k = 14, na.pad = TRUE, align = "right")
+    )
+  ] |>
+  _[(date >= start_date & date <= end_date) & (cycle %in% cycles), 
+    .SD,
+    .SDcols = patterns("^date$|^cumvol*")
+  ] |>
   pivot_longer(-date, names_prefix = "cumvol", names_to = "days", values_to = "rollsum") |>
   ggplot() +
   aes(date, rollsum, color = days) +
