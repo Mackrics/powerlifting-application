@@ -212,17 +212,17 @@ show_meso <- function(
     exercises = c("bench press", "squat"),
     cycles = get_cycles()
   ) {
-  data |>
-  filter(date >= start_date & date <= end_date) |>
-  filter(exercise %in% exercises) |>
-  filter(cycle %in%  cycles) |>
+  data[
+    (date >= start_date & date <= end_date) &
+    (exercise %in% exercises) &
+    (cycle %in%  cycles)
+  ] |>
   get_overview() |>
-  mutate(
-    across(
-      .cols = where(is.numeric),
-      .fns = \(x) round(x, 1)
-    )
-  ) |>
+  _[,
+     map(.SD, \(x) round(x, 1)),
+    .SDcols = is.numeric,
+    by = .(date, exercise)
+  ] |>
   gt() |>
   gt_theme_ctp(ctp_mocha) |>
   tab_options(
