@@ -33,11 +33,7 @@ ui <- fluidPage(
 		   selected = c("squat", "bench press", "deadlift")),
     selectizeInput("group", "Select muscle group", multiple = TRUE, 
 		   choices = get_groups(),
-		   selected = get_groups()),
-    selectizeInput("cycles", "Select cycles", multiple = TRUE, 
-		   choices = get_cycles(),
-		   selected = c(1, 2, 3, 4, 5, 6))
-
+		   selected = get_groups())
   ),
   mainPanel(
     tabsetPanel(
@@ -70,15 +66,13 @@ server <- function(input, output, session) {
         plot_total_volume(
 	  old_data,
 	  start_date = input$dates[[1]],
-	  end_date   = input$dates[[2]],
-	  cycles     = input$cycles
+	  end_date   = input$dates[[2]]
 	)
       } else {
         plot_total_volume(
 	  data(),
 	  start_date = input$dates[[1]],
-	  end_date   = input$dates[[2]],
-	  cycles     = input$cycles
+	  end_date   = input$dates[[2]]
 	)
       }
   }, height = function() {
@@ -91,16 +85,14 @@ server <- function(input, output, session) {
 	  old_data,
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  groups     = input$group,
-	  cycles     = input$cycles
+	  groups     = input$group
 	)
       } else {
         plot_volume(
 	  data(),
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  groups     = input$group,
-	  cycles     = input$cycles
+	  groups     = input$group
 	)
       }
   }, height = function() {
@@ -113,16 +105,14 @@ server <- function(input, output, session) {
 	  old_data,
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
-	  cycles     = input$cycles
+	  exercise   = input$exercise
 	)
       } else {
         plot_e1rm(
 	  data(),
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
-	  cycles     = input$cycles
+	  exercise   = input$exercise
 	)
       }
   }, height = function() {
@@ -135,17 +125,14 @@ server <- function(input, output, session) {
 	  old_data,
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
-	  cycles     = input$cycles
+	  exercise   = input$exercise
 	)
       } else {
         max_table(
 	  data(),
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
-	  cycles     = input$cycles
-	)
+	  exercise   = input$exercise
       }
   })
 
@@ -155,16 +142,14 @@ server <- function(input, output, session) {
 	  old_data,
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
-	  cycles     = input$cycles
+	  exercise   = input$exercise
 	)
       } else {
         show_meso(
 	  data(),
 	  start_date = input$dates[[1]],
 	  end_date   = input$dates[[2]],
-	  exercise   = input$exercise,
-	  cycles     = input$cycles
+	  exercise   = input$exercise
 	)
       }
   })

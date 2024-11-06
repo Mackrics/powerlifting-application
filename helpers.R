@@ -33,12 +33,9 @@ refresh_data <- function() {
   dt_enframe(name = "path", value = "data") |>
   _[, let(
     date = as.Date(str_extract(path, "[0-9]{4}-[0-9]{2}-[0-9]{2}")),
-    cycle = str_extract(path, "[0-9]{3}_cycle") |>
-	    str_extract("[0-9]{3}") |>
-	    as.numeric(),
     data = map(data, \(x) x[, let(weight = as.double(weight), rpe = as.double(rpe))])
   )]  |>
-  _[, rbindlist(data), by = .(date, cycle)] |>
+  _[, rbindlist(data), by = .(date)] |>
   _[, let(
     exercise = exercise |>
       str_replace_all("seal", "seal row") |>
@@ -66,8 +63,7 @@ get_overview <- function(data, by = c("date", "exercise")) {
     volume = sum(weight * reps)/1000,
     reps   = sum(reps),
     max    = max(weight),
-    e1rm   = max(e1rm),
-    cycle  = unique(cycle)
+    e1rm   = max(e1rm)
     ),
     by = by
   ][]
@@ -79,15 +75,13 @@ plot_volume <- function(
     data,
     groups,
     start_date = Sys.Date() - 90,
-    end_date = Sys.Date(),
-    cycles = get_cycles()
+    end_date = Sys.Date()
   ) {
   data[group %in% groups] |>
   get_overview(by = c("date", "group")) |>
   fill_dates(group = "group") |>
   _[, list(
-    volume = sum(replace_na(volume, 0)),
-    cycle = unique(cycle)
+    volume = sum(replace_na(volume, 0))
     ),
     by = list(date, group)
   ] |>
@@ -96,7 +90,7 @@ plot_volume <- function(
     ),
     by = group,
   ] |>
-  _[(date >= start_date & date <= end_date) & (cycle %in% cycles)] |>
+  _[(date >= start_date & date <= end_date)] |>
   ggplot() +
   aes(date, volume, color = group) +
   geom_line(linewidth = 1) +
@@ -111,13 +105,11 @@ plot_e1rm <- function(
     data,
     start_date = Sys.Date() - 90,
     end_date = Sys.Date(),
-    exercises = c("bench press", "squat"),
-    cycles = get_cycles()
+    exercises = c("bench press", "squat")
   ) {
   data |>
   filter(date >= start_date & date <= end_date) |>
   filter(exercise %in% {{ exercises }}) |>
-  filter(cycle %in% cycles) |>
   get_overview() |>
   ggplot() +
   aes(date, e1rm, color = exercise) +
@@ -138,13 +130,11 @@ max_table <- function(
     data,
     start_date = Sys.Date() - 90,
     end_date = Sys.Date(),
-    exercises = c("bench press", "squat"),
-    cycles = get_cycles()
+    exercises = c("bench press", "squat")
   ) {
   data |>
   filter(date >= start_date & date <= end_date) |>
   filter(exercise %in% exercises) |>
-  filter(cycle %in% cycles) |>
   summarize(
     .by = c(exercise, reps),
     max = max(weight),
@@ -176,15 +166,13 @@ max_table <- function(
 plot_total_volume <- function(
     data,
     start_date = Sys.Date() - 90,
-    end_date = Sys.Date(),
-    cycles = get_cycles()
+    end_date = Sys.Date()
   ) {
   data |>
   get_overview() |>
   fill_dates() |>
   _[, .(
-      volume = sum(volume, na.rm = TRUE),
-      cycle = unique(cycle)
+      volume = sum(volume, na.rm = TRUE)
     ),
     by = date
   ] |>
@@ -194,7 +182,7 @@ plot_total_volume <- function(
       cumvol14 = rollsum(replace_na(volume, 0), k = 14, na.pad = TRUE, align = "right")
     )
   ] |>
-  _[(date >= start_date & date <= end_date) & (cycle %in% cycles), 
+  _[(date >= start_date & date <= end_date), 
     .SD,
     .SDcols = patterns("^date$|^cumvol*")
   ] |>
@@ -213,13 +201,11 @@ show_meso <- function(
     data,
     start_date = Sys.Date() - 90,
     end_date = Sys.Date(),
-    exercises = c("bench press", "squat"),
-    cycles = get_cycles()
+    exercises = c("bench press", "squat")
   ) {
   data[
     (date >= start_date & date <= end_date) &
-    (exercise %in% exercises) &
-    (cycle %in%  cycles)
+    (exercise %in% exercises)
   ] |>
   get_overview() |>
   _[,
@@ -247,12 +233,6 @@ get_groups <- function() {
     pull()
 }
 
-get_cycles <- function() {
-  read_feather("./data/lifting-data.arrow") |>
-    distinct(cycle) |>
-    pull()
-}
-
 fill_dates <- function(data, group = "exercise") {
   data.table(
     date   = seq.Date(from = data[, min(date)], to = Sys.Date(), by = "1 day"),
@@ -260,6 +240,5 @@ fill_dates <- function(data, group = "exercise") {
   ) |>
   _[, .(group = unlist(group)), by = date] |>
   setnames(old = "group", new = group) |>
-  _[data, on = c("date", group)] |>
-  setnafill("locf", cols = "cycle")
+  _[data, on = c("date", group)]
 }
